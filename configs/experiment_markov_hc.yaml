@@ -1,0 +1,18 @@
+extends: configs/default.yaml
+
+experiment:
+  name: markov_hc
+  description: Placeholder configuration for a Markov high-confidence experiment.
+
+model:
+  name: markov
+  state_field: state
+  horizon_terms: 1
+  smoothing: null
+
+evaluation:
+  cohort_filter: high_confidence
+  metrics:
+    - mae
+    - rmse
+    - mape

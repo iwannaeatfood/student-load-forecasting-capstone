@@ -1,0 +1,42 @@
+@startuml layer08_architecture_overview
+title System Architecture Overview
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 外部参与者：UPP 提供需求和数据背景，学生团队配置并运行原型。
+actor "UPP Analyst / Client" as UPP
+actor "Student Team" as TEAM
+
+' 架构总览：Layer 1 到 Layer 7 依次覆盖请求、编排、处理、建模、评估、治理和存储。
+component "Layer 1:\nRequest Interface" as Layer1
+component "Layer 2:\nPipeline Orchestration Layer" as Layer2
+component "Layer 3:\nData Processing Pipeline" as Layer3
+component "Layer 4:\nForecasting Methodology Layer" as Layer4
+component "Layer 5:\nEvaluation, Explainability & Handover Layer" as Layer5
+component "Layer 6:\nData Governance & Reproducibility Controls" as Layer6
+database "Layer 7:\nData Stores Layer" as Layer7
+
+' 参与者首先与请求接口交互，形成可执行的预测实验。
+UPP --> Layer1 : provides requirements,\nsource data context,\nand feedback
+TEAM --> Layer1 : configures and runs\nprototype experiments
+
+' 主业务链路：请求进入编排层，经过数据处理和预测方法层，最后进入评估与交付层。
+Layer1 --> Layer2 : reproducible\nexecution request
+Layer2 --> Layer3 : orchestrates\npreprocessing workflow
+Layer3 --> Layer4 : processed cohort-state\ndata
+Layer4 --> Layer5 : forecasts for evaluation\nand handover
+
+' 数据存储链路：多个层共同读写第 7 层的输入、中间产物、模型产物和输出。
+Layer2 --> Layer7 : reads raw data and\nwrites run metadata
+Layer3 --> Layer7 : writes processed\ncohort-term data
+Layer4 --> Layer7 : reads/writes model\nartifacts
+Layer5 --> Layer7 : writes forecasts,\nmetrics, charts,\nand reports
+
+' 治理层是横切控制：约束执行上下文，支持溯源交付，并管理数据访问和输出用途。
+Layer6 ..> Layer2 : constrains execution\ncontext
+Layer6 ..> Layer5 : supports traceability\nand handover
+Layer6 ..> Layer7 : governs data access\nand output use
+
+@enduml

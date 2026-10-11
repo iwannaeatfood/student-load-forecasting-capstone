@@ -1,0 +1,36 @@
+@startuml layer01_request_interface
+title Layer 1
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 外部参与者：UPP 提供业务背景，学生团队负责运行和配置原型。
+actor "UPP Analyst / Client" as UPP
+actor "Student Team" as TEAM
+
+' 第 1 层职责：把用户输入、运行配置和版本信息整理成可复现的执行请求。
+package "Request Interface" {
+    ' 原型运行入口，可以是命令行、Notebook 或统一的流水线运行器。
+    component "CLI / Notebook /\nPipeline Runner" as Runner
+
+    ' 保存一次预测实验的业务参数和方法选择。
+    component "Run Configuration\n- Target: HC or EFTSL\n- Forecast horizon\n- Cohort level\n- Selected method\n- Historical train/test period" as Config
+
+    ' 将配置、数据版本和输出路径封装成后续流水线可追踪的请求对象。
+    component "Pipeline Execution Request\n- Run ID\n- Config version\n- Input data version\n- Output path" as Request
+}
+
+' 相邻层：第 1 层把执行请求交给第 2 层进行调度。
+component "Layer 2:\nPipeline Orchestration Layer" as Layer2
+
+' UPP 的业务反馈进入配置；学生团队通过运行入口触发实验。
+UPP --> Config : provides business context\nand feedback
+TEAM --> Runner : runs prototype experiments
+
+' 运行器读取配置并生成可复现请求，随后交给编排层执行。
+Runner --> Config : loads run settings
+Config --> Request : creates reproducible\nexecution request
+Request --> Layer2 : passes request to\npipeline orchestrator
+
+@enduml

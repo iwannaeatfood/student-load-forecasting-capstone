@@ -1,0 +1,52 @@
+@startuml layer05_evaluation_explainability_handover
+title Layer 5
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 上游层：第 4 层提供按 term 和 cohort 汇总的 HC / EFTSL 预测。
+component "Layer 4:\nForecasting Methodology Layer" as Layer4
+' 治理层：第 5 层需要运行谱系、假设和复现材料来支撑解释与交付。
+component "Layer 6:\nData Governance & Reproducibility Controls" as Layer6
+
+' 第 5 层职责：验证预测质量、解释结果来源、分析限制并生成最终交付材料。
+package "Evaluation, Explainability & Handover Layer" {
+    ' 使用历史切分进行回测，比较预测值和真实历史结果。
+    component "Historical Backtesting Module\nTrain/test historical split" as Backtesting
+
+    ' 计算误差指标和偏差，量化模型在历史数据上的表现。
+    component "Evaluation Module\nMAE / RMSE / MAPE / Bias" as Evaluation
+
+    ' 追踪预测值从输入 cohort、状态、矩阵到最终输出的来源。
+    component "Explainability & Traceability Module\nInput cohort -> state -> matrix -> forecast value" as Traceability
+
+    ' 汇总异常、失败案例和假设不满足的风险。
+    component "Error & Limitation Analysis\nAnomalies\nFailure cases\nAssumption violations" as LimitationAnalysis
+
+    ' 形成最终报告，包含方法、假设、限制和重新运行说明。
+    component "Final Report\nMethodology\nAssumptions\nLimitations\nRun instructions" as Handover
+}
+
+' 数据存储：第 5 层把预测结果、评估结果和文档写入输出存储。
+package "Layer 7: Data Stores Layer" {
+    database "Output Store\nForecasts\nMetrics\nCharts\nReports" as OutputStore
+}
+
+' 来自预测层的结果先进入历史回测流程。
+Layer4 --> Backtesting : forecast HC / EFTSL\nby term and cohort
+
+' 评估链路从回测结果开始，逐步形成指标、解释、限制分析和报告。
+Backtesting --> Evaluation : forecast vs actual\nhistorical data
+Evaluation --> Traceability : error metrics\nand residuals
+Traceability --> LimitationAnalysis : traceable forecast\nexplanations
+LimitationAnalysis --> Handover : findings, risks,\nand limitations
+
+' 可解释性和交付材料依赖第 6 层维护的谱系、假设和治理说明。
+Traceability ..> Layer6 : requires run lineage\nand assumptions
+Handover ..> Layer6 : uses reproducibility\nassets and governance notes
+
+' 最终交付物写入输出存储，供项目报告和客户端查看。
+Handover --> OutputStore : writes forecast files,\nevaluation report,\nand documentation
+
+@enduml

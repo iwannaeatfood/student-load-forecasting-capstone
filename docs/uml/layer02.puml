@@ -1,0 +1,41 @@
+@startuml layer02_pipeline_orchestration
+title Layer 2
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 上游层：第 1 层传入已经整理好的可复现执行请求。
+component "Layer 1:\nRequest Interface" as Layer1
+
+' 第 2 层职责：协调一次流水线运行，并记录数据、配置和运行版本信息。
+package "Pipeline Orchestration Layer" {
+    ' 负责读取输入、调用处理流程，并把各步骤串成一次完整运行。
+    component "Pipeline Orchestrator" as Orchestrator
+
+    ' 记录数据版本、配置版本和 Run ID，保证结果可以追踪和复现。
+    component "Versioning & Metadata Manager\n- Data version\n- Config version\n- Run ID" as Versioning
+}
+
+' 下游层：编排器调用第 3 层执行实际的数据预处理。
+component "Layer 3:\nData Processing Pipeline" as Layer3
+
+' 数据存储：本层读取原始数据，并把运行元数据写入输出存储。
+package "Layer 7: Data Stores Layer" {
+    database "Raw UPP Datasets\nCSV files" as RawData
+    database "Output Store\nForecasts\nMetrics\nCharts\nReports" as OutputStore
+}
+
+' 可复现执行请求进入编排器，成为本次流水线运行的入口。
+Layer1 --> Orchestrator : passes reproducible\nexecution request
+
+' 编排器读取所需原始表，并把运行信息交给版本管理模块记录。
+Orchestrator --> RawData : reads selected\nraw tables
+Orchestrator --> Versioning : records run metadata
+Versioning --> OutputStore : writes run ID,\nconfig version,\nand lineage metadata
+
+' 编排器触发预处理流程，同时向后续层提供 Run ID 和版本上下文。
+Orchestrator --> Layer3 : invokes preprocessing\nworkflow
+Versioning ..> Layer3 : provides run ID\nand version context
+
+@enduml

@@ -1,0 +1,56 @@
+@startuml layer07_data_stores
+title Layer 7
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 其他层通过第 7 层共享输入、处理中间表、模型产物和最终输出。
+component "Layer 1:\nRequest Interface" as Layer1
+component "Layer 2:\nPipeline Orchestration Layer" as Layer2
+component "Layer 3:\nData Processing Pipeline" as Layer3
+component "Layer 4:\nForecasting Methodology Layer" as Layer4
+component "Layer 5:\nEvaluation, Explainability & Handover Layer" as Layer5
+component "Layer 6:\nData Governance & Reproducibility Controls" as Layer6
+
+' 第 7 层职责：集中表示系统使用的主要数据存储和产物存储。
+package "Data Stores Layer" {
+    ' UPP 提供的原始 CSV 数据，是流水线的受控输入。
+    database "Raw UPP Datasets\nCSV files" as RawData
+
+    ' 清洗、整合和状态构造后的 cohort-term 表。
+    database "Processed Data Store\nCleaned cohort-term tables" as ProcessedData
+
+    ' 保存转移矩阵、状态定义等模型产物，便于复用和追踪。
+    database "Model Artifacts Store\nTransition matrices\nState definitions" as ArtifactStore
+
+    ' 保存预测、指标、图表和报告等最终输出。
+    database "Output Store\nForecasts\nMetrics\nCharts\nReports" as OutputStore
+}
+
+' 第 1 层通过配置决定输出路径，但不直接处理数据内容。
+Layer1 --> OutputStore : selects output path\nthrough run configuration
+
+' 第 2 层读取原始数据，并写入运行元数据与谱系信息。
+Layer2 --> RawData : reads raw tables
+Layer2 --> OutputStore : writes run metadata\nand lineage
+
+' 第 3 层读取原始数据，产出清洗后的 cohort-term 数据。
+RawData --> Layer3 : raw multi-table datasets
+Layer3 --> ProcessedData : writes cleaned\ncohort-term tables
+
+' 第 4 层读取处理后数据，并写入或读取模型参数和产物。
+ProcessedData --> Layer4 : processed cohort-state data
+Layer4 --> ArtifactStore : writes transition matrices\nand state definitions
+ArtifactStore --> Layer4 : supplies model parameters
+
+' 第 5 层把评估和交付结果写入输出存储。
+Layer5 --> OutputStore : writes forecasts,\nmetrics, charts,\nand reports
+
+' 第 6 层不直接生成数据，但对各存储施加访问、用途和假设记录约束。
+Layer6 ..> RawData : approved access\nconstraints
+Layer6 ..> OutputStore : prototype-only\nuse constraints
+Layer6 ..> ProcessedData : documented cleaning\nand state assumptions
+Layer6 ..> ArtifactStore : documented modelling\nassumptions
+
+@enduml

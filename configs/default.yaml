@@ -1,0 +1,33 @@
+project:
+  name: upp-forecasting-prototype
+  description: Placeholder default configuration for UPP forecasting.
+
+paths:
+  outputs: outputs
+  raw_data: data/raw
+  interim_data: data/interim
+  processed_data: data/processed
+  # H11CBREAD-41 output contract — see docs/output_schema.md
+  forecast: outputs/forecast
+
+run:
+  target: HC
+  cohort_level: program
+  input_data_version: local-raw
+  historical_train_period: null
+  historical_test_period: null
+
+preprocessing:
+  term_field: term
+  cohort_field: cohort
+  load_field: load
+
+model:
+  name: baseline
+  horizon_terms: 1
+
+evaluation:
+  backtest_splits: []
+  metrics:
+    - mae
+    - rmse

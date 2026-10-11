@@ -1,0 +1,39 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments and local environment files
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+tests/.tmp_config/
+tests/.tmp_load_data/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local scratch files
+# .temp/
+
+# Local IDE settings
+.idea/
+.vscode/
+.DS_Store
+
+.ppt/

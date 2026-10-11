@@ -1,0 +1,136 @@
+@startuml arch
+title System Architecture of the Reproducible Student Load Forecasting Prototype
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 外部参与者：UPP 提供数据和业务反馈，学生团队负责配置和运行原型。
+actor "UPP Analyst / Client" as UPP
+actor "Student Team" as TEAM
+
+' 请求接口层：把业务参数和运行方式整理成一次可复现的实验配置。
+package "Request Interface" {
+    ' 运行入口，可以是命令行、Notebook 或统一的流水线运行器。
+    component "CLI / Notebook /\nPipeline Runner" as Runner
+    ' 保存预测目标、时间范围、cohort 粒度和方法选择。
+    component "Run Configuration\n- Target: HC or EFTSL\n- Forecast horizon\n- Cohort level\n- Selected method" as Config
+}
+
+' 数据存储：集中表示原始数据、处理后数据、模型产物和最终输出。
+database "Raw UPP Datasets\nCSV files" as RawData
+database "Processed Data Store\nCleaned cohort-term tables" as ProcessedData
+database "Model Artifacts Store\nTransition matrices\nState definitions\nRegression parameters\nFitted model metadata" as ArtifactStore
+database "Output Store\nForecasts\nMetrics\nCharts\nReports" as OutputStore
+
+' 流水线编排层：控制一次运行的顺序，并记录版本和谱系信息。
+package "Pipeline Orchestration Layer" {
+    ' 串联读取数据、预处理、建模和输出流程。
+    component "Pipeline Orchestrator" as Orchestrator
+    ' 记录数据版本、配置版本和 Run ID，支撑复现和追踪。
+    component "Versioning & Metadata Manager\n- Data version\n- Config version\n- Run ID" as Versioning
+}
+
+' 数据处理层：把原始多表数据转换成建模可用的 cohort-term / cohort-state 数据。
+package "Data Processing Pipeline" {
+    ' 检查字段、类型和缺失列。
+    component "Schema Validation Module\n- Field checks\n- Type checks\n- Missing-column checks" as Validation
+    ' 处理缺失值、重复记录和无效记录。
+    component "Data Cleaning Module\n- Missing values\n- Duplicates\n- Invalid records" as Cleaning
+    ' 合并 Faculty、Program、Course、Cohort 和 Term 等维度。
+    component "Data Integration Module\n- Faculty\n- Program\n- Course\n- Cohort\n- Term" as Integration
+    ' 统一两学期、三学期和 2028 过渡期日历口径。
+    component "Calendar Normalisation Module\n- Two-semester mapping\n- Three-term mapping\n- 2028 transition handling" as Calendar
+    ' 构造学生进展状态和 UOC 区间状态。
+    component "Cohort-State Construction Module\n- Commencing\n- Continuing\n- Completing\n- Inactive\n- Transferred\n- UOC bands" as StateConstruction
+}
+
+' 预测方法层：根据配置选择回归基线或 Markov Chain 方法并生成预测。
+package "Forecasting Methodology Layer" {
+    ' 方法适配器负责路由到具体预测方法。
+    interface "Methodology Adapter" as MethodAdapter
+    ' 回归基线预测引擎。
+    component "Baseline Regression Forecast Engine" as RegEngine
+    ' 定义 Markov Chain 使用的状态空间。
+    component "State Definition Module" as StateDefinition
+    ' 从历史数据构造状态转移概率矩阵。
+    component "Transition Matrix Builder\nTransition probabilities" as TransitionBuilder
+    ' 使用转移矩阵生成 Markov 预测。
+    component "Markov Chain Forecast Engine" as MarkovEngine
+    ' 统一格式化 HC / EFTSL 预测输出。
+    component "Forecast Postprocessor\nHC / EFTSL formatting" as Postprocessor
+}
+
+' 评估、解释和交付层：验证预测质量，解释结果来源，并形成最终交付物。
+package "Evaluation, Explainability & Handover Layer" {
+    ' 使用历史切分进行回测。
+    component "Historical Backtesting Module\nTrain/test historical split" as Backtesting
+    ' 计算 MAE、RMSE、MAPE 和 Bias 等指标。
+    component "Evaluation Module\nMAE / RMSE / MAPE / Bias" as Evaluation
+    ' 追踪输入 cohort 到最终预测值的计算链路。
+    component "Explainability & Traceability Module\nInput cohort -> state -> matrix -> forecast value" as Traceability
+    ' 汇总异常、失败案例和假设限制。
+    component "Error & Limitation Analysis\nAnomalies\nFailure cases\nAssumption violations" as LimitationAnalysis
+    ' 生成方法说明、假设、限制和运行说明。
+    component "Handover Package Generator\nMethodology notes\nAssumptions\nLimitations\nRun instructions" as Handover
+}
+
+' 数据治理与复现控制层：记录假设、保留复现材料，并约束数据访问和输出用途。
+package "Data Governance & Reproducibility Controls" {
+    ' 记录预处理、建模假设和关键决策。
+    component "Assumptions & Decision Log" as AssumptionLog
+    ' 保存 README、依赖文件和流水线脚本。
+    component "Reproducibility Assets\nREADME\nrequirements.txt\npipeline scripts" as ReproAssets
+    ' 管理数据访问边界和原型输出用途。
+    component "Controlled Data Handling\nApproved access\nPrototype-only outputs" as Governance
+}
+
+' 外部输入：UPP 提供受控数据和业务反馈，团队运行原型。
+UPP --> RawData : supplies managed datasets
+UPP --> Config : provides business context\nand feedback
+TEAM --> Runner : runs prototype experiments
+
+' 请求到编排：运行入口加载配置，编排层读取数据并记录运行元数据。
+Runner --> Config : loads run settings
+Config --> Orchestrator : execution request
+Orchestrator --> RawData : reads raw tables
+Orchestrator --> Versioning : records run metadata
+
+' 数据处理链路：原始数据依次经过校验、清洗、整合、日历标准化和状态构造。
+RawData --> Validation : raw multi-table datasets
+Validation --> Cleaning : validated tables\nand schema report
+Cleaning --> Integration : cleaned records
+Integration --> Calendar : integrated cohort-term dataset
+Calendar --> StateConstruction : calendar-normalised cohort data
+StateConstruction --> ProcessedData : cohort state transition table
+
+' 预测链路：处理后数据进入方法适配器，再按配置走回归或 Markov 路径。
+ProcessedData --> MethodAdapter : processed cohort-state data
+MethodAdapter --> RegEngine : selected method =\nBaseline Regression
+ProcessedData --> RegEngine : historical load features\nand cohort-term tables
+RegEngine --> ArtifactStore : regression parameters\nand fitted model metadata
+ArtifactStore --> RegEngine : fitted regression parameters
+RegEngine --> Postprocessor : raw regression\nforecast values
+MethodAdapter --> StateDefinition : selected method = Markov Chain
+StateDefinition --> TransitionBuilder : defined progression states
+TransitionBuilder --> ArtifactStore : transition probability matrices
+ArtifactStore --> MarkovEngine : model parameters
+MarkovEngine --> Postprocessor : raw forecast values
+Postprocessor --> Backtesting : forecast HC / EFTSL\nby term and cohort
+
+' 评估与交付链路：预测结果经过回测、指标计算、解释、限制分析和交付生成。
+Backtesting --> Evaluation : forecast vs actual\nhistorical data
+Evaluation --> Traceability : error metrics\nand residuals
+Traceability --> LimitationAnalysis : traceable forecast explanations
+LimitationAnalysis --> Handover : findings, risks,\nand limitations
+Handover --> OutputStore : forecast files,\nevaluation report,\ndocumentation
+
+' 横切依赖：版本、假设、复现材料和治理规则支撑溯源、交付和受控使用。
+Config ..> Versioning : config version
+Versioning ..> Traceability : run ID and lineage
+AssumptionLog ..> Traceability : preprocessing and\nmodelling assumptions
+ReproAssets ..> Handover : re-run instructions
+Governance ..> RawData : access constraints
+Governance ..> OutputStore : prototype-only use
+
+@enduml

@@ -1,0 +1,50 @@
+@startuml layer06_governance_reproducibility
+title Layer 6
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 外部参与者：UPP 提供治理要求，学生团队维护可复现材料与建模记录。
+actor "UPP Analyst / Client" as UPP
+actor "Student Team" as TEAM
+
+' 相邻层：第 6 层通过约束执行环境、补充溯源信息来支撑其他层。
+component "Layer 2:\nPipeline Orchestration Layer" as Layer2
+component "Layer 5:\nEvaluation, Explainability & Handover Layer" as Layer5
+
+' 第 6 层核心职责：记录假设、保留复现实物、控制数据访问和输出用途。
+package "Data Governance & Reproducibility Controls" {
+    ' 记录预处理、建模选择、业务假设和关键决策，便于后续解释与审计。
+    component "Assumptions & Decision Log" as AssumptionLog
+
+    ' 保存重新运行原型所需的说明、依赖清单和脚本入口。
+    component "Reproducibility Assets\nREADME\nrequirements.txt\npipeline scripts" as ReproAssets
+
+    ' 明确原始数据访问边界，以及原型输出只能用于项目验证和交付。
+    component "Controlled Data Handling\nApproved access\nPrototype-only outputs" as Governance
+}
+
+' 第 7 层数据存储：治理控制同时约束输入数据和输出成果。
+package "Layer 7: Data Stores Layer" {
+    database "Raw UPP Datasets\nCSV files" as RawData
+    database "Output Store\nForecasts\nMetrics\nCharts\nReports" as OutputStore
+}
+
+' UPP 定义数据访问与使用约束；团队负责维护复现说明和假设记录。
+UPP ..> Governance : defines approved\naccess constraints
+TEAM ..> ReproAssets : maintains re-run\ninstructions
+TEAM ..> AssumptionLog : records preprocessing\nand modelling assumptions
+
+' 治理规则限制原始数据读取范围，并标记输出成果的原型用途。
+Governance ..> RawData : constrains source\ndata access
+Governance ..> OutputStore : constrains\nprototype-only use
+
+' 假设记录和复现资产支撑第 5 层的可解释性分析、限制说明和最终交接。
+AssumptionLog ..> Layer5 : supports traceability\nand limitation analysis
+ReproAssets ..> Layer5 : supports handover\npackage generation
+
+' 治理要求反向约束第 2 层的流水线执行上下文，例如数据权限和运行边界。
+Governance ..> Layer2 : constrains pipeline\nexecution context
+
+@enduml

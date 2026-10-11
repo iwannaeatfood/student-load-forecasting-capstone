@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: upp-forecasting-prototype:latest
+    working_dir: /app
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs

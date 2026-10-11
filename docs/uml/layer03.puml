@@ -1,0 +1,52 @@
+@startuml layer03_data_processing
+title Layer 3
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 上游层：第 2 层决定本次运行需要处理哪些原始数据。
+component "Layer 2:\nPipeline Orchestration Layer" as Layer2
+
+' 第 3 层职责：把多张原始表清洗、整合并转换成建模可用的 cohort-state 数据。
+package "Data Processing Pipeline" {
+    ' 检查字段、类型和缺失列，先确认输入数据结构符合预期。
+    component "Schema Validation Module\n- Field checks\n- Type checks\n- Missing-column checks" as Validation
+
+    ' 处理缺失值、重复记录和明显无效记录，提高数据质量。
+    component "Data Cleaning Module\n- Missing values\n- Duplicates\n- Invalid records" as Cleaning
+
+    ' 将 Faculty、Program、Course、Cohort 和 Term 等维度合并成统一表。
+    component "Data Integration Module\n- Faculty\n- Program\n- Course\n- Cohort\n- Term" as Integration
+
+    ' 统一不同教学日历口径，并处理 2028 年学期结构变化。
+    component "Calendar Normalisation Module\n- Two-semester mapping\n- Three-term mapping\n- 2028 transition handling" as Calendar
+
+    ' 根据学生进展状态和 UOC 区间构造 Markov 或回归所需的状态表。
+    component "Cohort-State Construction Module\n- Commencing\n- Continuing\n- Completing\n- Inactive\n- Transferred\n- UOC bands" as StateConstruction
+}
+
+' 下游层：第 4 层使用处理后的 cohort-state 数据进行预测建模。
+component "Layer 4:\nForecasting Methodology Layer" as Layer4
+
+' 数据存储：输入来自原始数据，输出写入处理后数据存储。
+package "Layer 7: Data Stores Layer" {
+    database "Raw UPP Datasets\nCSV files" as RawData
+    database "Processed Data Store\nCleaned cohort-term tables" as ProcessedData
+}
+
+' 编排层请求原始输入，原始多表数据先进入 schema 校验。
+Layer2 --> RawData : requests raw input\nfor configured run
+RawData --> Validation : raw multi-table datasets
+
+' 数据处理流程按校验、清洗、整合、日历标准化和状态构造顺序推进。
+Validation --> Cleaning : validated tables\nand schema report
+Cleaning --> Integration : cleaned records
+Integration --> Calendar : integrated cohort-term dataset
+Calendar --> StateConstruction : calendar-normalised\ncohort data
+
+' 最终的 cohort-state 转换表被保存，并提供给预测方法层。
+StateConstruction --> ProcessedData : writes cohort state\ntransition table
+ProcessedData --> Layer4 : provides processed\ncohort-state data
+
+@enduml

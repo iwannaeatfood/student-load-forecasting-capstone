@@ -1,0 +1,62 @@
+@startuml layer04_forecasting_methodology
+title Layer 4
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' 上游层：第 3 层提供已经清洗和状态化的 cohort 数据。
+component "Layer 3:\nData Processing Pipeline" as Layer3
+
+' 第 4 层职责：根据配置选择预测方法，训练或读取模型参数，并输出标准化预测值。
+package "Forecasting Methodology Layer" {
+    ' 方法适配器根据配置把数据路由到回归基线或 Markov Chain 方法。
+    interface "Methodology Adapter" as MethodAdapter
+
+    ' 回归基线用于提供可解释、可比较的基础预测结果。
+    component "Baseline Regression Forecast Engine" as RegEngine
+
+    ' 定义学生进展状态，为转移矩阵构造提供状态空间。
+    component "State Definition Module" as StateDefinition
+
+    ' 从历史 cohort-state 数据中估计状态转移概率矩阵。
+    component "Transition Matrix Builder\nTransition probabilities" as TransitionBuilder
+
+    ' 使用转移矩阵对未来 HC / EFTSL 进行 Markov Chain 预测。
+    component "Markov Chain Forecast Engine" as MarkovEngine
+
+    ' 将不同模型的原始输出统一整理成 HC / EFTSL 预测格式。
+    component "Forecast Postprocessor\nHC / EFTSL formatting" as Postprocessor
+}
+
+' 下游层：预测结果交给第 5 层做回测、评估、解释和交付。
+component "Layer 5:\nEvaluation, Explainability & Handover Layer" as Layer5
+
+' 数据存储：读取处理后数据，保存或读取模型参数与中间产物。
+package "Layer 7: Data Stores Layer" {
+    database "Processed Data Store\nCleaned cohort-term tables" as ProcessedData
+    database "Model Artifacts Store\nTransition matrices\nState definitions\nRegression parameters\nFitted model metadata" as ArtifactStore
+}
+
+' 第 3 层写入处理后数据，本层从该数据存储读取建模输入。
+Layer3 --> ProcessedData : writes processed\ncohort-state data
+ProcessedData --> MethodAdapter : supplies processed\ncohort-state data
+
+' 回归路径：读取历史特征，保存拟合参数，再生成原始预测值。
+MethodAdapter --> RegEngine : selected method =\nBaseline Regression
+ProcessedData --> RegEngine : historical load features\nand cohort-term tables
+RegEngine --> ArtifactStore : writes regression parameters\nand fitted model metadata
+ArtifactStore --> RegEngine : supplies fitted\nregression parameters
+RegEngine --> Postprocessor : raw regression\nforecast values
+
+' Markov 路径：定义状态、构造转移矩阵，再用模型参数生成预测值。
+MethodAdapter --> StateDefinition : selected method =\nMarkov Chain
+StateDefinition --> TransitionBuilder : defined progression\nstates
+TransitionBuilder --> ArtifactStore : writes transition\nprobability matrices
+ArtifactStore --> MarkovEngine : supplies model\nparameters
+MarkovEngine --> Postprocessor : raw Markov\nforecast values
+
+' 后处理模块输出统一格式的 term/cohort 预测，供评估层使用。
+Postprocessor --> Layer5 : forecast HC / EFTSL\nby term and cohort
+
+@enduml

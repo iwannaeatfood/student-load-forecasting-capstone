@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "upp-forecasting-prototype"
+version = "0.1.0"
+description = "Placeholder skeleton for a UPP forecasting prototype."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "numpy>=2.3,<3",
+  "matplotlib>=3.10,<4",
+  "pandas>=3,<4",
+  "pyspark>=4,<5",
+  "pyyaml>=6.0",
+  "scipy>=1.14,<2",
+  "scikit-learn>=1.9,<2",
+  "gradio>=6.19.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+]
+notebook = [
+  "ipykernel>=6.29",
+  "jupyterlab>=4.4",
+  "nbformat>=5.10",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.pyright]
+extraPaths = ["src", ".temp/combine"]
