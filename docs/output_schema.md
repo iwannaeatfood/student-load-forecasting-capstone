@@ -1,6 +1,6 @@
 # Forecast Output Schema
 
-Implemented for H11CBREAD-41
+Implemented for H11CBREAD-41 by Yanyan Zhu (z5565492@ad.unsw.edu.au)
 
 Output contract for `outputs/forecast/` (`paths.forecast` in
 `configs/default.yaml`). H11CBREAD-34/-38/-66 write these files; do not

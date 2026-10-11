@@ -1,6 +1,6 @@
 # Prototype Strengths, Weaknesses, and Limitations
 
-Implemented for H11CBREAD-37
+Implemented for H11CBREAD-37 by Yanyan Zhu (z5565492@ad.unsw.edu.au)
 
 Draft from `.temp/combine/` experimental results; re-verify all numbers
 once H11CBREAD-38 and H11CBREAD-66 land.

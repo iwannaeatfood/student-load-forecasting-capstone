@@ -1,6 +1,6 @@
 """Validate and persist processed preprocessing outputs to a consistent location."""
 
-# Implemented for H11CBREAD-32
+# Implemented for H11CBREAD-32 by Yanyan Zhu (z5565492@ad.unsw.edu.au)
 
 from pathlib import Path
 
