@@ -41,15 +41,3 @@ python -m pytest
 ```
 
 or `uv sync --group dev && uv run pytest`. Checked on 11 October 2026 in a fresh Python 3.13 virtual environment: **41 passed, 2 failed** — both failures (`test_term_aliases_match_terms_active_years_raw_terms`, `test_create_demo_builds_gradio_interface`) look for the client's raw data under `data/raw/` (`Terms Active Years.csv`, `Actuals Data.csv`), which is not included. My three tests (`pytest tests/test_preprocessing.py -k "save_processed or validate_modelling"`) pass on their own. PySpark is only imported lazily by the Spark CSV strategy and is not needed for the tests. The Docker files (`Dockerfile`, `compose.yaml`) are the team's and build an image with Python, Java 21 and PySpark.
-
-## Likely interview questions
-
-**What was your technical contribution?** Small and specific: the validated save step for preprocessing outputs, the output-schema contract and the limitations document (table above). My main contribution was the Scrum Master role.
-
-**Tell me about a conflict or failure and what you changed.** Sprint 2: two members implemented the pipeline entry point twice (package vs module with the same name); both merged, the code failed to run and earlier over-forecasting logic was overwritten. Three "Request Changes" pull requests had also been merged in the same batch. I introduced a hard merge gate on unresolved review feedback and a weekly Jira health check.
-
-**Why does `docs/known_limitations.md` show WAPE 1.51?** It is the Sprint-2 draft (16 July 2026) written from early experimental results, and says so ("re-verify all numbers"). The model changed afterwards, so the final evaluation numbers are the ones in the team's final report (WAPE 3.64% in a six-fold rolling-origin backtest), not the ones in that draft.
-
-**What is a CTMC and why use it here?** Students move between states (for example newly commencing, continuing, completed) over time; a CTMC describes the rates of those transitions, and the matrix exponential of the generator gives transition probabilities over any elapsed time. It keeps forecasts explainable — a client requirement — because every forecast decomposes into existing students plus the client's future-intake scenario.
-
-**What is WAPE?** Weighted absolute percentage error: total absolute error divided by total actual headcount, so large programs dominate and it stays defined when small programs have near-zero headcount.
